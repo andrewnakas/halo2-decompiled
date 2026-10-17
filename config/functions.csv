@@ -18156,8 +18156,7 @@ va,size,owner,style,evidence,name,object,calls,source,status
 003d3ff7,164,xdk:xnet,size,packed,,,003d14be 003d1db3 003d2100 003d3a6b 003dc87d,,todo
 003d409b,56,xdk:xnet,size,ebp packed,,,003d0fec 003d3ff7,,todo
 003d40d3,190,xdk:xnet,size,packed,,,003d14fb 003d2b81,,todo
-003d4191,73,xdk:xnet,size,packed,,,003d40d3,,todo
-003d41da,36,xdk:xnet,size,packed,,,,,todo
+003d4191,109,xdk:xnet,size,packed,,,003d40d3,,todo
 003d41fe,64,xdk:xnet,size,packed,,,003d40d3,,todo
 003d423e,79,xdk:xnet,size,packed,,,003d40d3,,todo
 003d428d,40,xdk:xnet,size,packed,,,003cfeae 003d3ff7,,todo

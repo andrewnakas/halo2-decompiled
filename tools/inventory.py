@@ -64,6 +64,11 @@ NOT_STARTS = {
     # the DOLBY section happen to equal it. No rule can drop it: a real function
     # can follow one that falls into it (retail 0x27b020 after 0x27ace0).
     0x231c00,
+    # inside 0x3d4191 (XNET): two bytes into its `mov dword ptr [ecx], 0x1000000`
+    # at 0x3d41d8; 0x3d4191 runs on to `ret 8` at 0x3d41fb. Its only caller was a
+    # call read out of the packed bytes at 0x3e0296. As a start it cut 0x3d4191
+    # short, so code built from these boundaries fell off its end.
+    0x3d41da,
 }
 
 # Function starts that discovery cannot find: nothing calls these functions,
