@@ -34,7 +34,3 @@ long __stdcall function_b7b40(void *creation)
 
 
 
-// @stub 0xb8540
-void __stdcall function_b8540(long a)
-{
-}

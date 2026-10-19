@@ -51,9 +51,11 @@ static inline void object_identifier_clear(s_object_hide_identifier *identifier)
 	identifier->field_0 = -1;
 }
 
-// Disabled: matches alone, but closes the call cycle b8540 -> 109400 -> e4c10 -> e18d0 -> b75a0 and costs matched d6bc0, 1c4260 and the physics component functions (build/codex-report.md, round 25).
-#if 0
-// @retail 0xb8540 disabled
+/* Retail takes object_index on the stack (ret 4) and its callers push it; this body keeps it there
+   (fecheck map p0 <- stk0). Note: enabling it closes the call cycle b8540 -> 109400 -> e4c10 -> e18d0 -> b75a0
+   that retail also has; an earlier full build (round 25) saw d6bc0, 1c4260 and physics component
+   functions change then, to be rechecked with the byte checker. */
+// @retail 0xb8540
 void __stdcall function_b8540(long object_index)
 {
 	s_object_hide_header *header = (s_object_hide_header *)g_4e0300->data + (object_index & 0xffff);
@@ -74,4 +76,3 @@ void __stdcall function_b8540(long object_index)
 	function_a7a60(object_index);
 	object_interpolated_values_clear_all(object_index);
 }
-#endif
