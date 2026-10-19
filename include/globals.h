@@ -695,10 +695,6 @@ struct s_input_device_view
 };
 
 extern byte g_510ca0;
-extern byte g_510cb0;
-extern byte g_510cb1;
-extern dword g_510e2c;
-extern dword g_510e30;
 /* g_511bf4: the input counters, 0x4040 bytes. The record of one tick
    (unknown_1967d0.cpp) copies it whole. g_511c4e and g_511c90 are the
    counters at +0x5a and +0x9c of its first group; g_515294 is the pair block
@@ -717,11 +713,10 @@ struct s_input_counters
 	};
 };
 
-extern s_input_counters g_511bf4;
+#include "game_results_storage.h"
 #define g_511c4e (&g_511bf4.groups[0][0x2d])
 #define g_511c90 (&g_511bf4.groups[0][0x4e])
 #define g_515294 (&g_511bf4.pairs[0][0][0])
-extern s_input_entry_state g_511000[4];
 
 inline s_input_device_view *input_device(long index)
 {
