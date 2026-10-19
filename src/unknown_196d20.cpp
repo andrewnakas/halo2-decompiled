@@ -8,17 +8,11 @@
 #include <string.h>
 #include <time.h>
 
-struct s_196d20_sample
-{
-	dword data[9];
-};
 
 extern dword g_510ca4;
-extern s_196d20_sample g_515c34[];
 
 byte g_510ca1;
 dword g_510ca4;
-s_196d20_sample g_515c34[1000];
 
 // @retail 0x196d20
 long function_196d20(long index)

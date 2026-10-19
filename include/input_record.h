@@ -22,19 +22,7 @@ struct s_counter_bits
 
 extern s_counter_bits g_46ddc0[86];
 
-struct s_input_entry
-{
-	byte active;
-	byte unknown01;
-	short value;
-	byte unknown04[0x14];
-};
-
-/* eleven bytes: a six byte address, a used flag and four more */
-struct s_input_address
-{
-	byte data[11];
-};
+/* s_input_entry and s_input_address: game_results_storage.h (through globals.h) */
 
 /* the record of the input state of one tick (0x4cc0 bytes) */
 struct s_input_record
@@ -137,6 +125,5 @@ struct s_flagged_value
 #define g_511028 (*(s_flagged_value *)((byte *)g_511000 + 0x28))
 
 extern byte g_510ca1;
-extern s_input_entry g_511a74[16];
 
 #endif

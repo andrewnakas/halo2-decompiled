@@ -20,10 +20,6 @@ class c_class_6a600;
 
 
 
-// @stub 0x195a40
-void function_195a40(void)
-{
-}
 
 
 union point3f;

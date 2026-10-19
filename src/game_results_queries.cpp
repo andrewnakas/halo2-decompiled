@@ -12,8 +12,7 @@
    (g_510cb1); a store happens only while they are kept (g_510ca0) and not
    yet final. The players' entries are reached through input_device() */
 
-/* the teams' entries: active, standing (unknown01) and score (value) */
-s_input_entry g_511a74[16];
+/* the teams' entries (g_511a74, in the results): active, standing (unknown01) and score (value) */
 
 /* a player's statistic of one category (the 45 blocks of 8 counters at
    +0x9c of each player's counters) */
