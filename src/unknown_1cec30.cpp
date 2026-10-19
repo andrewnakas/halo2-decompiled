@@ -1644,7 +1644,10 @@ void __stdcall function_1d01c0(s_havok_component *component)
 struct s_component_node_object
 {
  long definition_index;
- byte unknown04[0x116 - 4];
+ byte unknown04[0x110 - 4];
+ short unknown110;
+ short orientations_offset;
+ byte unknown114[2];
  short matrices_offset;
 };
 
@@ -1672,7 +1675,8 @@ struct s_component_node_default
 
 struct s_component_node_render_model
 {
- byte unknown00[0x4c];
+ byte unknown00[0x48];
+ long node_count;
  s_component_node_default *nodes;
 };
 
@@ -2419,6 +2423,74 @@ PRIVATE inline void component_frame_matrix(hkTransform const *frame, transform4x
     vector3d_from_havok(&matrix->left, &frame->m_rotation.m_col1);
     vector3d_from_havok(&matrix->up, &frame->m_rotation.m_col2);
     vector3d_from_havok((vector3f *)&matrix->position, &frame->m_translation);
+}
+
+/* Moves the component's driven nodes onto their rigid bodies (raised by `offset`), marks
+   them in `updated` and rebuilds the rest of the hierarchy from the moved nodes. */
+// @retail 0x1d3920
+void __stdcall function_1d3920(byte *component_bytes, dword *updated, real offset)
+{
+    /* retail keeps all three arguments on the stack (ret 0xc); its callers push them */
+    byte *const *component_reference = &component_bytes;
+    dword *const *updated_reference = &updated;
+    real const *offset_reference = &offset;
+    s_havok_component *component = (s_havok_component *)*component_reference;
+    if (TEST_FIELD_BIT(component->flag9) || component->rigid_bodies.size <= 0)
+        return;
+    s_component_node_object *object = (s_component_node_object *)havok_object_get(component->object_index);
+    s_component_transform_definition *definition = (s_component_transform_definition *)g_4e3b44[object->definition_index & 0xffff].bytes;
+    s_component_transform_model *model = (s_component_transform_model *)g_4e3b44[definition->model_index & 0xffff].bytes;
+    s_component_node_body_model *physics = (s_component_node_body_model *)g_4e3b44[
+        ((s_component_collision_model_link *)model)->physics_model_index & 0xffff].bytes;
+    s_component_node_render_model *render_model = (s_component_node_render_model *)g_4e3b44[model->render_model_index & 0xffff].bytes;
+    dword moved[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+    long unknown = 0;
+    rigid_transform_scaled *orientations = NULL;
+    bool changed = false;
+    if (object->orientations_offset != NONE)
+    {
+        unknown = (dword)object->unknown110 >> 5;
+        orientations = (rigid_transform_scaled *)((byte *)object + object->orientations_offset);
+    }
+    for (long i = 0; i < component->rigid_bodies.size; i++)
+    {
+        s_component_node_body_link *first = &physics->bodies[component->rigid_bodies.data[i].nodes[0]];
+        for (long j = 0; j < component->rigid_bodies.data[i].node_count; j++)
+        {
+            s_component_node_body_link *link = &physics->bodies[component->rigid_bodies.data[i].nodes[j]];
+            if (link->node == NONE || havok_component_rigid_body_get(i, component)->m_motion->getType() == 6)
+                continue;
+            long node = link->node;
+            if ((*updated_reference)[node >> 5] & (1 << (node & 31)))
+                continue;
+            /* a node below the body's first node follows that node */
+            long ancestor = node;
+            while (ancestor != NONE && ancestor != first->node)
+                ancestor = physics->nodes[ancestor].parent;
+            if (ancestor != NONE && link->node != first->node)
+                continue;
+            long parent = physics->nodes[node].parent;
+            transform4x3f *matrix = &component_node_matrices(component->object_index)[node];
+            component->rigid_body_matrix_get(i, matrix);
+            matrix->position.z += *offset_reference;
+            if (link->node != first->node)
+            {
+                hkVector4 buffer[16];
+                transform4x3f frame_matrix;
+                c_component_child_frames *shape = *(c_component_child_frames **)((byte *)component->rigid_bodies.data[i].rigid_body + 0xc);
+                s_component_child_frame *frame = shape->get_frame(j, buffer);
+                component_frame_matrix(&frame->transform, &frame_matrix);
+                function_142a60(matrix, &frame_matrix, matrix);
+            }
+            (*updated_reference)[link->node >> 5] |= 1 << (link->node & 31);
+            changed = true;
+            moved[link->node >> 5] |= 1 << (link->node & 31);
+            for (; parent != NONE; parent = physics->nodes[parent].parent)
+                moved[parent >> 5] |= 1 << (parent & 31);
+        }
+    }
+    if (changed && render_model->node_count > 0)
+        component->function_1d3d20(0, *updated_reference, moved, orientations, unknown);
 }
 
 // @retail 0x1d83e0
