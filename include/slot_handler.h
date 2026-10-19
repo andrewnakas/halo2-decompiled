@@ -835,17 +835,31 @@ struct s_actor_view
 	short unknown5b6;
 	byte unknown5b8[0x5d0 - 0x5b8];
 	bool unknown5d0;
-	byte unknown5d1[0x5d4 - 0x5d1];
+	byte unknown5d1;
+	bool unknown5d2;
+	bool unknown5d3;
 	bool unknown5d4;
-	byte unknown5d5[0x5e8 - 0x5d5];
+	byte unknown5d5;
+	short unknown5d6;
+	bool unknown5d8;
+	byte unknown5d9;
+	short unknown5da;           /* ticks the actor has stayed near unknown5dc */
+	point3f unknown5dc;
 	short unknown5e8;
 	byte unknown5ea[0x5ec - 0x5ea];
 	vector3f unknown5ec;
 	byte unknown5f8[0x605 - 0x5f8];
 	bool unknown605;
-	byte unknown606[0x656 - 0x606];
+	byte unknown606[0x61e - 0x606];
+	short unknown61e;
+	byte unknown620[0x656 - 0x620];
 	short unknown656;
-	byte unknown658[0x6fc - 0x658];
+	byte unknown658[0x6d1 - 0x658];
+	bool unknown6d1;
+	bool unknown6d2;
+	byte unknown6d3;
+	vector3f unknown6d4;
+	byte unknown6e0[0x6fc - 0x6e0];
 	dword unknown6fc;
 	byte unknown700[0x70a - 0x700];
 	short unknown70a;
@@ -864,7 +878,8 @@ struct s_actor_view
 		} unknown810;
 		dword flags810;
 	};
-	byte unknown814[0x858 - 0x814];
+	vector3f unknown814;
+	byte unknown820[0x858 - 0x820];
 	long unknown858;
 	long command_script_index;  /* the command script it runs (actor_behavior_x87.cpp), or NONE */
 	byte unknown860[0x888 - 0x860];
