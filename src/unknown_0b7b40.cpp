@@ -59,9 +59,11 @@ void object_list_insert(long index);
 long function_b8820();
 bool havok_object_type_can_have_component(long tag);
 
-// Disabled: 550 differences (2108 of 2150 bytes); enabling it reorders the object call cycle and costs matched b8890, 1c35f0, 1c3770, 1c39c0 and 1d1b60 (build/codex-report.md, round 25).
-#if 0
-// @retail 0xb7b40 disabled
+/* Retail takes the creation data on the stack (ret 4) and its callers push it; this body keeps it
+   there (fecheck map p0 <- stk0). Not byte-identical yet (round 25: 550 differences). Note: enabling it
+   closes the object call cycle retail also has; an earlier full build (round 25) saw matched b8890,
+   1c35f0, 1c3770, 1c39c0 and 1d1b60 change then, to be rechecked with the byte checker. */
+// @retail 0xb7b40
 long __stdcall function_b7b40(void *creation)
 {
     byte *placement = (byte *)creation;
@@ -248,4 +250,4 @@ fail_allocation:
 done:
     return result;
 }
-#endif
+
