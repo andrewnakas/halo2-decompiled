@@ -1510,7 +1510,7 @@ void refresh_results_195ed0(s_results_update_storage *results)
 #endif
 
 extern dword g_510ca4;
-dword g_510ca8;
+extern dword g_510ca8;   /* defined in unknown_196d20.cpp */
 struct s_surface_description;
 s_surface_description *function_192e60(long index);
 void utf8_string_to_utf16_string(char const *source, word *destination, long destination_count);
