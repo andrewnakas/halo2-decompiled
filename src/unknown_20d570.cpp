@@ -74,7 +74,7 @@ long function_1469f0(real seconds);
 bool function_1df560(short team_a, short team_b);
 bool __stdcall function_20cdc0(long arg_0, long arg_1, long arg_2, s_audio_selection *arg_3, long *arg_4);
 void function_20d870(long actor_index, short channel, short value);
-void __stdcall function_1fbac0(long unknown, long unit_index, bool unknown2, long unknown3, s_1fbac0_event *event);
+void __stdcall function_1fbac0(long actor_index, long unit_index, short mode, bool filter, s_1fbac0_event *event);
 
 // @retail 0x20d570
 void __stdcall function_20d570(short arg_1, long arg_0, long arg_2, void *arg_3)

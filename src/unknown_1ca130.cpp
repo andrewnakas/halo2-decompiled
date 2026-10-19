@@ -5,7 +5,7 @@
 #include <string.h>
 // @flags /O2 /arch:SSE /Gr
 
-void __stdcall function_1fbac0(long unknown, long unit_index, bool unknown2, long unknown3, s_1fbac0_event *event);
+void __stdcall function_1fbac0(long actor_index, long unit_index, short mode, bool filter, s_1fbac0_event *event);
 struct s_1ca130
 {
  byte field_0[0xc];
