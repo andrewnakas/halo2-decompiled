@@ -986,8 +986,6 @@ void function_6fa60(c_session_state_joining *self)
  }
 }
 
-// Enabling this queue processor currently changes shared call conventions.
-#if 0
 long network_session_find_player(c_class_58d20 *session, const dword *identity);
 struct s_surface_description;
 struct s_matchmaking_ratings;
@@ -1001,9 +999,12 @@ bool __stdcall function_5c720(c_class_58d20 *session, const s_session_member_ide
  long player_count, const dword *identities, const long *values, bool reserve,
  long timeout, const s_session_id *id, long *reason);
 
-// Disabled implementation for 0x6d4c0.
-void function_6d4c0(c_session_client *client)
+// @retail 0x6d4c0
+void __stdcall function_6d4c0(void *object)
 {
+ /* retail keeps object on the stack (ret 4); its caller 0x6dec0 pushes it */
+ void *const *object_reference = &object;
+ c_session_client *client = (c_session_client *)*object_reference;
  c_class_58d20 *session = client->session;
  s_session_summary *summary = 0;
  if (session_state_is_live(session) && session->flag49fd)
@@ -1157,7 +1158,6 @@ void function_6d4c0(c_session_client *client)
  }
 }
 
-#endif
 
 // @retail 0x6f700
 void function_06f700(c_session_state_joining *self)
