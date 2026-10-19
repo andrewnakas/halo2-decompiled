@@ -212,7 +212,6 @@ bool function_25820(s_render_view_2b790 const *source)
 struct s_matrix_workspace { long size; byte data[0x27000]; };
 extern s_matrix_workspace g_487b18;
 
-#if 0 // Activation must preserve all matched callers and callees.
 struct s_223240;
 struct s_frame_parameters_12a50
 {
@@ -235,7 +234,8 @@ void __stdcall function_2c790(byte const *source);
 void function_146de0(void);
 void function_146b80(void);
 
-// Disabled retail 0x2b5d0; activation regresses an opening match.
+// @retail 0x2b5d0
+/* retail takes count in eax and mode in ecx; players, layout and source stay on the stack (ret 0xc) */
 void function_2b5d0(long count, long mode, long players, long layout, s_223240 const *source)
 {
     long const *players_reference = &players;
@@ -283,7 +283,6 @@ void function_2b5d0(long count, long mode, long players, long layout, s_223240 c
     if (restore) function_146b80();
     g_4ba030 = 0;
 }
-#endif
 
 struct s_23600_section
 {
