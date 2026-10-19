@@ -14,8 +14,6 @@ struct s_session_options;
 
 struct s_voice_position_batch;
 
-// @stub 0x6d4c0
-void __stdcall function_6d4c0(void *object) { }
 
 
 
