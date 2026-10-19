@@ -4,8 +4,6 @@
 #include "unknown_0259d0.h"
 
 struct s_object;
-// @stub 0x1fc7e0
-void __stdcall function_1fc7e0(long actor_index) {}
 struct s_effect_owner;
 struct s_unit_request;
 class c_animation_channel;
