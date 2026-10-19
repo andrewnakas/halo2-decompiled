@@ -234,8 +234,8 @@ void __stdcall function_2c790(byte const *source);
 void function_146de0(void);
 void function_146b80(void);
 
-// @retail 0x2b5d0
 /* retail takes count in eax and mode in ecx; players, layout and source stay on the stack (ret 0xc) */
+// @retail 0x2b5d0
 void function_2b5d0(long count, long mode, long players, long layout, s_223240 const *source)
 {
     long const *players_reference = &players;
