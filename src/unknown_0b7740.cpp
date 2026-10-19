@@ -888,10 +888,6 @@ void function_b75a0(long object_index, point3f const *point, vector3f const *for
     function_b7360(object_index);
 }
 
-// Activating this body changes shared helper register conventions and loses
-// seven existing exact matches. Preserve the closest draft until those
-// helper conventions can be reconciled with their owners.
-#if 0
 
 __declspec(noinline) bool function_0bfe60(dword const *mask, long node);
 bool unit_animation_periodic_layer_active(long object_index);
@@ -907,7 +903,11 @@ void __stdcall function_1421f0(transform4x3f *out, rigid_transform_scaled const 
 __declspec(noinline) transform4x3f const *__stdcall function_bd610(long object_index,
 	byte const *nodes, transform4x3f const *input_matrices);
 
-// Retail 0xbd610
+/* Retail takes all three arguments on the stack (ret 0xc) and its caller 0x137800 pushes them; this
+   body keeps them there (fecheck map p0..p2 <- stk0..stk2). Its helpers 10db60, 10edd0, 10ec00, 10e530
+   and 1132f0 have no other caller; an earlier full build saw seven helper matches change when this
+   body was enabled, to be rechecked with the byte checker. */
+// @retail 0xbd610
 transform4x3f const *__stdcall function_bd610(long object_index, byte const *nodes,
 	transform4x3f const *input_matrices)
 {
@@ -987,7 +987,6 @@ transform4x3f const *__stdcall function_bd610(long object_index, byte const *nod
 	return result;
 }
 
-#endif
 
 #include <math.h>
 /* the point and direction 0xbc070 sets in the list at g_4de2f4 */
