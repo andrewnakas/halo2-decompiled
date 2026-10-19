@@ -35,9 +35,6 @@ struct s_object_link_iterator;
 
 
 
-// @stub 0xb7430
-bool __stdcall function_b7430(long object_index, point3f const *position, vector3f const *forward, vector3f const *up,
-    s_location const *location, bool a, bool b, bool c, bool d) { return false; }
 
 
 
