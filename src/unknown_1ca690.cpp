@@ -23,7 +23,7 @@ struct s_1ca692
 long function_146650();
 long function_1469f0(real seconds);
 real distance_sq3f(point3f const *a, point3f const *b);
-void __stdcall function_1fbac0(long unknown, long unit_index, bool unknown2, long unknown3, s_1fbac0_event *event);
+void __stdcall function_1fbac0(long actor_index, long unit_index, short mode, bool filter, s_1fbac0_event *event);
 
 struct s_1ca693
 {

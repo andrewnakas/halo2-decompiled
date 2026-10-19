@@ -19,7 +19,7 @@ struct s_1fb7e0_object_header
 	s_1fb7e0_object *object;
 };
 
-void __stdcall function_1fbac0(long unknown, long unit_index, bool unknown2, long unknown3, s_1fbac0_event *event);
+void __stdcall function_1fbac0(long actor_index, long unit_index, short mode, bool filter, s_1fbac0_event *event);
 
 __declspec(noinline) bool function_1fb7e0(short type, long actor_index, s_1fb7e0_data const *data, long target_index, long unknown);
 

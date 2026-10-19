@@ -30,7 +30,7 @@ long function_1c9580(long object_index, bool a);
 bool function_1df5d0(short team_a, short team_b);
 void function_20ff50(long object_index);
 void __stdcall function_210180(long value);
-void __stdcall function_1fbac0(long unknown, long unit_index, bool unknown2, long unknown3, s_1fbac0_event *event);
+void __stdcall function_1fbac0(long actor_index, long unit_index, short mode, bool filter, s_1fbac0_event *event);
 long function_26b230(long clump_index, long prop_index);
 extern s_record_pool *g_502420;
 extern "C" void _ReadWriteBarrier(void);
