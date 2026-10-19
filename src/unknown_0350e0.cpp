@@ -3961,8 +3961,7 @@ PRIVATE __forceinline real filter_transition_time_289e0()
 
 void function_14ac0();
 
-#if 0
-// Retail 0x289e0
+// @retail 0x289e0
 bool function_289e0()
 {
     byte active = g_4670cc.changed; // Retail's active flag is at +1 in the current canonical declaration.
@@ -4073,7 +4072,6 @@ bool function_289e0()
     }
     return active;
 }
-#endif
 
 byte g_509414;
 byte *g_4c5008;
