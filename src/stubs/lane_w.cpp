@@ -60,5 +60,3 @@ struct s_depth_parameters_13450;
 // @stub 0x13450
 bool function_13450(s_depth_parameters_13450 const *parameters) { return false; }
 
-// @stub 0x289e0
-bool function_289e0() { return false; }
