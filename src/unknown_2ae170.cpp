@@ -587,7 +587,7 @@ void c_sound_effects::initialize(s_sound_effect_settings *settings, s_sound_effe
 		sound_stream_append_mixbin(&mixbins, 8, -64.0f);
 	sound_stream_append_mixbin(&mixbins, 7, -64.0f);
 	sound_stream_append_mixbin(&mixbins, 9, -64.0f);
-	IDirectSoundBuffer_SetMixBinVolumes(m_buffers->buffer0c, &mixbins.mixbins);
+	IDirectSoundBuffer_SetMixBins(m_buffers->buffer0c, &mixbins.mixbins);
 	IDirectSoundBuffer_SetVolume(m_buffers->buffer0c, 0);
 	IDirectSoundBuffer_SetVolume(m_buffers->buffer18, -6400);
 
@@ -599,7 +599,7 @@ void c_sound_effects::initialize(s_sound_effect_settings *settings, s_sound_effe
 		sound_stream_append_mixbin(&second, 9, m_settings.level04);
 	else
 		sound_stream_append_mixbin(&second, 9, -64.0f);
-	IDirectSoundBuffer_SetMixBinVolumes(m_buffers->buffer10, &second.mixbins);
+	IDirectSoundBuffer_SetMixBins(m_buffers->buffer10, &second.mixbins);
 	IDirectSoundBuffer_SetVolume(m_buffers->buffer10, 0);
 	IDirectSoundBuffer_SetVolume(m_buffers->buffer1c, -6400);
 
@@ -609,7 +609,7 @@ void c_sound_effects::initialize(s_sound_effect_settings *settings, s_sound_effe
 	sound_stream_append_mixbin(&third, 7, -64.0f);
 	sound_stream_append_mixbin(&third, 9, -64.0f);
 	sound_stream_append_mixbin(&third, 10, 0.0f);
-	IDirectSoundBuffer_SetMixBinVolumes(m_buffers->buffer20, &third.mixbins);
+	IDirectSoundBuffer_SetMixBins(m_buffers->buffer20, &third.mixbins);
 	IDirectSoundBuffer_SetVolume(m_buffers->buffer20, 0);
 	IDirectSoundBuffer_SetVolume(m_buffers->buffer14, -6400);
 }
