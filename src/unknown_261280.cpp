@@ -648,8 +648,6 @@ short __stdcall function_261d20(long actor_index, s_261d20_entry *entries, long 
     return count;
 }
 
-#if 0
-// Active versions alter the matched 0x2605d0 caller frame; retain its original stub.
 #include "props.h"
 #include <string.h>
 typedef bool (__stdcall *t_reference_compare)(long, long, const void *);
@@ -708,11 +706,19 @@ struct s_260670_state
 	real best_score;
 };
 
-// Disabled: activation changes matched 0x2605d0 and 0x261280 through LTCG.
-// @retail 0x260670 disabled
+// @retail 0x260670
 s_reference __stdcall function_260670(long actor_index, s_2605d0_request const *request,
 	s_261d20_entry *entries, short count, long reported_entry, long reported_owner, byte *scratch, bool *has_path)
 {
+	/* retail keeps all eight arguments on the stack (ret 0x20); its callers 0x2605d0 and 0x2613d0 push them */
+	long const *actor_index_reference = &actor_index;
+	s_2605d0_request const *const *request_reference = &request;
+	s_261d20_entry *const *entries_reference = &entries;
+	short const *count_reference = &count;
+	long const *reported_entry_reference = &reported_entry;
+	long const *reported_owner_reference = &reported_owner;
+	byte *const *scratch_reference = &scratch;
+	bool *const *has_path_reference = &has_path;
 	byte *actor = (byte *)actor_get(actor_index);
 	s_type_967e20 *context = (s_type_967e20 *)request;
 	byte *parameters = (byte *)context;
@@ -977,8 +983,6 @@ s_reference __stdcall function_260670(long actor_index, s_2605d0_request const *
 done:
 	return state.result;
 }
-
-#endif
 
 #include "props.h"
 void function_1caa40(long object_index, point3f *position);
