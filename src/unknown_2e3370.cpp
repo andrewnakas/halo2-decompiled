@@ -303,7 +303,52 @@ void class_2e1090::function_2e3370(bounds_2e0020 const *bounds, overlap_endpoint
 	lists->axes[2].append(sentinel);
 }
 
-// score 111 (was 171): first written form 171; frame now agrees. Sort setup
+inline void set_index_2e3b00(element_2e1090 const &element, cell_2e1090 *cells, long index)
+{
+	long owner = element.owner;
+	if ((owner & 1) == 0)
+	{
+		*(long *)owner = index;
+	}
+	else
+	{
+		((cell_2e1090 *)((char *)cells + (owner & ~1)))->box = (unsigned short)index;
+	}
+}
+inline void set_index2_2e3b00(long const &owner_ref, cell_2e1090 *cells, long index)
+{
+	long owner = owner_ref;
+	if ((owner & 1) == 0)
+	{
+		*(long *)owner = index;
+	}
+	else
+	{
+		((cell_2e1090 *)((char *)cells + (owner & ~1)))->box = (unsigned short)index;
+	}
+}
+// sorts `count` entries by key
+inline void sort_2e02d0(entry_2e0250 *entries, int count)
+{
+	order_2e0250 order = {};
+	if (count > 1)
+	{
+		int const last = count - 1;
+		function_2e02d0(entries, 0, last, order);
+	}
+}
+
+// score 41 (was 76): the cell and axis loops are guarded by their own entry
+// tests (`if (0 <= boxes.size - 1)`, `if (0 < axes[axis].size)`), which lines the
+// axis loops up with retail, and the moved box's cell is addressed in place.
+// Before, 76 (was 100): the owner loop reads each element through a reference (the
+// cell addressed as in 0x2e50d0), the cell loop through a reference to the
+// cell's box list, and the axis loop steps the endpoint in its header. Extent
+// now agrees; the owner copy and the cell loop's registers remain.
+// Before, 100 (was 111): the sort is set up by a helper that takes the entries and
+// their count (retail loads the list and steps past the sentinel before the
+// count test). Owner-loop copy, cell-loop registers and axis step order remain.
+// Before, 111 (was 171): first written form 171; frame now agrees. Sort setup
 // and loop registers differ. Object argument 141; its scope 141; cell
 // reference 130; named count 101 (NOT kept: repeated array pointer reads);
 // endpoint cursor 111; range pointer 100 (NOT kept: one use); element
@@ -340,12 +385,7 @@ void class_2e1090::function_2e3b00()
 		((endpoint_2e0f80 *)order.data)[i].value = axes[0].data[elements.data[i].slots[4]].value;
 		((endpoint_2e0f80 *)order.data)[i].id = (unsigned short)i;
 	}
-	long const sortable_count = order.size - 1;
-	order_2e0250 context = {};
-	if (sortable_count > 1)
-	{
-		function_2e02d0((entry_2e0250 *)(order.data + 1), 0, sortable_count - 1, context);
-	}
+	sort_2e02d0((entry_2e0250 *)(order.data + 1), order.size - 1);
 	for (long i = 0; i < elements.size; i++)
 	{
 		remap.data[((endpoint_2e0f80 *)order.data)[i].id] = i;
@@ -353,31 +393,36 @@ void class_2e1090::function_2e3b00()
 	}
 	for (long i = 1; i < elements.size; i++)
 	{
-		long owner = elements.data[i].owner;
-		if ((owner & 1) == 0)
+		element_2e1090 const &element = elements.data[i];
+		if ((element.owner & 1) == 0)
 		{
-			*(long *)owner = i;
+			*(long *)element.owner = i;
 		}
 		else
 		{
-			((cell_2e1090 *)((char *)cells + (owner & ~1)))->box = (unsigned short)i;
+			((cell_2e1090 *)((char *)cells + (element.owner & ~1)))->box = (unsigned short)i;
 		}
 	}
 	for (long i = 0; i < cells_used; i++)
 	{
-		cell_2e1090 &cell = cells[i];
-		for (long j = cell.boxes.size - 1; j >= 0; j--)
+		shorts_2e1090 &boxes = cells[i].boxes;
+		if (0 <= boxes.size - 1)
 		{
-			cell.boxes.data[j] = (unsigned short)remap.data[cell.boxes.data[j]];
+			for (long j = boxes.size - 1; j >= 0; j--)
+			{
+				boxes.data[j] = (unsigned short)remap.data[boxes.data[j]];
+			}
 		}
 	}
 	for (long axis = 0; axis < 3; axis++)
 	{
 		endpoint_2e0f80 *endpoint = axes[axis].data;
-		for (long i = 0; i < axes[axis].size; i++)
+		if (0 < axes[axis].size)
 		{
-			endpoint->id = (unsigned short)remap.data[endpoint->id];
-			endpoint++;
+			for (long i = 0; i < axes[axis].size; i++, endpoint++)
+			{
+				endpoint->id = (unsigned short)remap.data[endpoint->id];
+			}
 		}
 	}
 }
