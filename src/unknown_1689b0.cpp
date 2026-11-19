@@ -607,6 +607,10 @@ bool function_1eff40(s_lookup *lookup, long flags, point3f const *point,
 	vector3f const *direction, s_lookup_ray_result *result);
 short *function_d8ae0(long object_index, long region_index, short *material);
 
+// Matched in a full build with stand-in SDK headers (was 12): the material type is stored through a pointer to the
+// field, and the material buffer is two words with the second passed (retail passes esp+0x1a, the second word of a
+// 4-byte cell; the first word is never written, so the exact type of the local is a guess).
+// Before:
 // score 12 (was 26): the material local sits at esp+0x18 where retail has
 // esp+0x1a, and the material store is scheduled after the hit copies; tried
 // the local declared first, between found and lookup, in the inner block and
@@ -618,7 +622,7 @@ bool __stdcall function_169510(long object_index, bool a, dword flags, dword tes
 	bool found = false;
 	s_lookup lookup;
 	s_lookup_ray_result hit;
-	short material;
+	short material[2];
 	do
 	{
 		s_collision_object_header *header = &((s_collision_object_header *)g_4e0300->data)[object_index & 0xffff];
@@ -631,7 +635,8 @@ bool __stdcall function_169510(long object_index, bool a, dword flags, dword tes
 			if (lookup_pointer->initialize(object_index) && function_1eff40(lookup_pointer, test_flags, point, vector, &hit) && result->t > hit.hit.t)
 			{
 				result->type = 4;
-				result->material_type = *function_d8ae0(lookup.handle, hit.hit.surface_index, &material);
+				short *material_type = (short *)&result->material_type;
+				*material_type = *function_d8ae0(lookup.handle, hit.hit.surface_index, &material[1]);
 				result->instance_index = NONE;
 				result->unknown3c = NONE;
 				*(short *)result->unknown44 = hit.item;
@@ -2042,19 +2047,6 @@ real *function_120790(real *out, real const *plane, real const *point, short axi
 // zero-based edge loop (`points[edge_index]`, `points[(edge_index + 1) % point_count]`) 602 (2885 B); `bool inside = true;`
 // right after the plane distance 549; the nearest reset right after the plane distance 548 (masked 443; both moves under the
 // keep bar); the plane distance through dot3f 567 (2893 B); the squared radius ahead of the shape query 616 (2857 B).
-// M3 lane 4 r215 (fast, control 551; aligned/masked = difflib-aligned exact/register-masked counts, control 363/139): the
-// edge loop from 0 with `long next_vertex = (vertex + 1) % prism->point_count;` named at its top 619 (2904 B, frame
-// 0xb968, aligned 361, masked 115: the clamp, the early inc/idiv and the loop tail are then retail's shape); with
-// `radius * radius` written in the test (no radius_squared local) 601 (2888 B, aligned 344, masked 114: the product is
-// computed after the guard and `push ebx` as retail; the frame keeps one compiler temporary too many). On that form:
-// the modulo inline in the second reconstruction 600 (frame 0xb964 as retail, but aligned 423, masked 137);
-// radius_squared named in the prism loop 617 (2900 B); first/second declared at prism scope 601 (same code).
-// Lead: the 601 form is the closest structure yet; what is left is one frame temporary and the cursor/point EBX/EBP swap.
-// Separate count/clearance assignments in edge-first or face-first pairs 550/551,
-// edge-first with declarations before the copies or face declarations first 550/550,
-// paired initialization beside each sum or counts beside sums with clearances last 550/551,
-// prism index before the square or square in the admitted loop 551/548.
-// NOT kept: the count and clearance homes remain, and the three-point gain is below the threshold.
 // @retail 0x16a8e0
 bool __stdcall function_16a8e0(long flags, point3f const *point, real radius,
 	long ignore_object, long ignore_parent, point3f *out, real *out_radius)
