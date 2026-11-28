@@ -199,9 +199,9 @@ s_globals_element *function_188640(long key)
 }
 
 // @retail 0x188690
-s_globals_element *function_188690(short index)
+s_globals_element *function_188690(c_type_47f957 index)
 {
-	short const *local_0 = &index;
+	short const *local_0 = &index.m_index;
 	long local_1 = *(long const volatile *)local_0;
 	return globals_element_get((s_globals_element_block_view *)g_4e034c, (short)local_1);
 }

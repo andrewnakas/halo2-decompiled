@@ -16,6 +16,7 @@
 #include "vector_products.h"
 #include "bit_vector.h"
 #include "unknown_1e1f20.h"
+#include "impacts.h"
 #include <math.h>
 #include <string.h>
 
@@ -196,7 +197,7 @@ struct s_type_1e6529
 	byte unknown69[3];
 	vector3f cone_direction;
 	real unknown78;
-	short unknown7c;
+	c_type_47f957 unknown7c; /* the material; constructed NONE, the store retail has ahead of each 0xd6660 call */
 	short unknown7e;
 	byte unknown80[4];
 	bool unknown84;
@@ -324,7 +325,7 @@ struct s_damage_info
 	s_damage_info_region *regions;
 	long unknownc4;
 	byte *unknownc8;
-	short shield_material;
+	c_type_47f957 shield_material;
 	short unknownce;
 	byte unknownd0[8];
 	long unknownd8;
@@ -637,7 +638,7 @@ void function_d6660(s_type_1e6529 *data, long definition_index)
 {
 	memset(data, 0, sizeof(*data));
 	data->definition_index = definition_index;
-	short *material = &data->unknown7c;
+	short *material = &data->unknown7c.m_index;
 	*material = g_47d8e0;
 	data->owner.object_index = NONE;
 	data->owner.player_index = NONE;
@@ -1571,7 +1572,6 @@ void function_dbfb0(long object_index, s_damage_owner const *owner, bool a, bool
 
 	s_type_1e6529 data;
 
-	data.unknown7c = NONE;
 	function_d6660(&data, definition_index);
 	data.unknown54 = 1.0f;
 	if (owner)
@@ -1693,10 +1693,10 @@ real function_d9020(long object_index, byte const *resistance, byte const *sourc
 	if ((**(byte const *const *)(resistance + 4) & 0x20) && !(source[4] & 0x20))
 		result = 0.0f;
 
-	if (global_material_get(data->unknown7c))
+	if (global_material_get(data->unknown7c.m_index))
 	{
-		byte *armor_a = global_material_get(data->unknown7c);
-		byte *armor_b = global_material_get(data->unknown7c);
+		byte *armor_a = global_material_get(data->unknown7c.m_index);
+		byte *armor_b = global_material_get(data->unknown7c.m_index);
 
 		result = function_d5bc0(*(string_handle const *)(source + 0x40), *(string_handle const *)(source + 0x44),
 			*(string_handle *)(armor_b + 0x10), *(string_handle *)(armor_a + 0x14)) * result;
@@ -1793,7 +1793,7 @@ bool function_d9f70(long region_index, long permutation_index, s_damage_info *in
 }
 
 struct s_globals_element;
-s_globals_element *function_188690(short index);
+s_globals_element *function_188690(c_type_47f957 index);
 long function_1e4a10(long index);
 
 /* damages an object's shield: scales the damage by the shield material's
@@ -2381,7 +2381,6 @@ void function_d9e70(long object_index, s_damage_owner const *owner, long definit
 	{
 		s_type_1e6529 data;
 
-		data.unknown7c = NONE;
 		function_d6660(&data, definition_index);
 		data.owner = *owner;
 		*(byte *)&data.unknown84 = unknown;
@@ -3744,7 +3743,18 @@ enum
 
 /* damages an object's regions through the model's damage markers within
    the damage's radius and cone, then its attached children the same way */
-// score 203 (was 215): the code is the same instruction for instruction except for the material block: retail
+// MATCH (1272 B). The cause is the one m3 lane 4 found at r235 (note below): retail hands 0x188690 its material index
+// as a two-byte aggregate by value. Applied here with the material type include/impacts.h already has, c_type_47f957,
+// in place of the held patch's block index wrapper: 0x188690's parameter, this record's +0x7c, the info's shield
+// material, src/projectiles.cpp's copy of the +0x7c field and src/unknown_184250.cpp's material entry have that type,
+// 0xcf040 constructs it at its call, and the marker name is read into a local ahead of the 0xb8d30 call (without that
+// local 115, as r235 measured). The type's constructor sets NONE, so declaring a `s_type_1e6529` now emits the store
+// that the seven `... = NONE;` lines ahead of the 0xd6660 calls stood for (0xdbfb0, 0xd9e70, 0xdc0a0, 0xfc330 twice,
+// 0xfaa60 twice); those lines are removed. With them kept as `.m_index = NONE;` this function matches too.
+// Measured outside the lanes on r1040 (full build, stand-in SDK headers): this function 203 -> 0 and no other
+// function moves (0x188690, 0xcf040, 0x184060, 0xd9020, 0xd6660, 0xdbfb0, 0xd9e70 and 0xdc0a0 still match; 0xd9110,
+// 0xd7b80, 0xfc330 and 0xfaa60 keep their scores).
+// Earlier at 203 (was 215): the code is the same instruction for instruction except for the material block: retail
 // loads data->unknown7c again (`xor ecx, ecx; mov cx, [esi + 0x7c]`) for each function_188690 call, while ours
 // keeps the first load (the inlined global_material_get's argument) in di across both calls, which makes the
 // function 16 bytes shorter and shifts the loop padding after it. Tried: a short local for the material index in
@@ -3755,7 +3765,7 @@ enum
 // Friendly output second 203, material field pointer/reference 203/203, named armor groups 213.
 // Conditional adjustment 203, separate adjusted amount 213, shared point difference 209, named model index 330.
 // NOT kept: the material index remains in DI through both lookups, and naming the model index shifts the object spill.
-// m3 lane 4 r235: HELD (needs the owner's OK), build/r235/held-d82e0.patch: MATCH, fast and plain, and nothing else moves
+// m3 lane 4 r235: HELD then (applied since with another wrapper type, see MATCH above), build/r235/held-d82e0.patch: MATCH, fast and plain, and nothing else moves
 // among the 234 functions of the five edited files (0xcf040, 0x184060, 0x188690 and 0xd9020 still match, 0xd9110 8,
 // 0xfaa60 1160). Cause: retail hands 0x188690 its material index as a two-byte aggregate by value. Each call copies the
 // field afresh (`xor r, r; mov r16, [esi + 0x7c]; push r`, never shared with the inlined test's load), 0x188690 keeps it
@@ -3817,7 +3827,9 @@ void __stdcall function_d82e0(s_type_1e6529 *data, real damage, long object_inde
 
 			s_object_marker marker;
 
-			if (function_b8d30(object_index, *(long *)entry, &marker, 1, false) == 1)
+			long marker_name = *(long *)entry;
+
+			if (function_b8d30(object_index, marker_name, &marker, 1, false) == 1)
 			{
 				vector3f direction;
 
@@ -3853,7 +3865,7 @@ void __stdcall function_d82e0(s_type_1e6529 *data, real damage, long object_inde
 			bool friendly = false;
 			real amount = function_d9b60(data, (byte const *)definition, object_index, &friendly);
 
-			if (global_material_get(data->unknown7c))
+			if (global_material_get(data->unknown7c.m_index))
 			{
 				amount = function_d5bc0(definition->damage_group, definition->damage_group_b,
 					*(string_handle *)((byte *)function_188690(data->unknown7c) + 0x10),
@@ -4153,19 +4165,19 @@ void __stdcall function_d7b80(s_type_1e6529 *data, long object_index, short node
 			{
 				if (region_entry_index == NONE)
 				{
-					data->unknown7c = info->unknownce;
+					data->unknown7c.m_index = info->unknownce;
 				}
 				else
 				{
 					byte *entry = *(byte **)(model + 0x5c) + region_entry_index * 0x14;
 
-					data->unknown7c = *(short *)(entry + 0x10);
+					data->unknown7c.m_index = *(short *)(entry + 0x10);
 					accumulator.unknown00 = entry;
 				}
 			}
 			else if (data->flags & 1)
 			{
-				data->unknown7c = info->unknownce;
+				data->unknown7c.m_index = info->unknownce;
 			}
 
 			if (i == 0)
@@ -4511,7 +4523,6 @@ void function_dc0a0(long object_index)
 			s_damage_region_accumulator accumulator;
 			s_damage_report report;
 
-			data.unknown7c = NONE;
 			function_d6660(&data, *(long *)(damage_globals + 0x14));
 			memset(&accumulator, 0, sizeof(accumulator));
 			data.unknown54 = 1.0f;

@@ -571,7 +571,8 @@ s_location *object_get_root_location(long object_index, s_location *location);
 long __stdcall function_d6c80(s_type_1e6529 *data, long ignore_object_index);
 short *function_1886d0(long object_index, short *material_type);
 struct s_globals_element;
-s_globals_element *function_188690(short index);
+class c_type_47f957;
+s_globals_element *function_188690(c_type_47f957 index);
 bool function_101380(long weapon_index);
 bool function_1013e0(long weapon_index);
 bool __stdcall function_1697c0(long flags, point3f const *point, vector3f const *vector, long ignore_object_index,
@@ -6632,7 +6633,7 @@ void function_cf040(long unit_index, short type)
 			damage.material_index = *function_1886d0(hit_index, &material_type);
 		}
 		long material_index = *(long *)&damage.material_index;
-		if (function_188690((short)material_index))
+		if (function_188690(c_type_47f957((short)material_index)))
 		{
 			function_ceee0(unit_index, damage_definition_index, (short)material_index, &point, g_4687b0);
 		}

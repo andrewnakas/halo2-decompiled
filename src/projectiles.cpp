@@ -2641,7 +2641,7 @@ struct s_type_1e6529
 	real scale;
 	byte unknown58[0x78 - 0x58];
 	real unknown78;
-	short material_index;
+	c_type_47f957 material_index; /* constructed NONE, the store retail has ahead of each 0xd6660 call */
 	short unknown7e;
 	void const *unknown80;
 	byte unknown84;
@@ -2952,7 +2952,6 @@ void __stdcall function_fc330(long projectile_index, bool detach_contrail, real 
 		{
 			s_type_1e6529 data;
 
-			data.material_index = NONE;
 			function_d6660(&data, damage_index);
 			data.unknown84 = (*(definition_bytes + 0x128) & 0x3f) | 0x80;
 			data.flags |= 0x1008;
@@ -3053,7 +3052,6 @@ void __stdcall function_fc330(long projectile_index, bool detach_contrail, real 
 		if (area_index != NONE)
 		{
 			s_type_1e6529 data;
-			data.material_index = NONE;
 			function_d6660(&data, area_index);
 			data.unknown84 = *(definition_bytes + 0x128) & 0x3f;
 
@@ -3585,7 +3583,7 @@ real function_11ce20(vector3f const *a, vector3f const *b);
 real function_1201a0(vector3f *v, vector3f const *fallback);
 void random_vector_in_cone(dword *seed, vector3f const *forward, vector3f *result, real min_angle, real max_angle);
 struct s_globals_element;
-s_globals_element *function_188690(short index);
+s_globals_element *function_188690(c_type_47f957 index);
 void function_184060(long unknown3c, long unknown59, s_type_1e6529 *data, long unknown50);
 void function_a85c0(long projectile_index, s_collision_result_1697c0 const *collision, vector3f const *direction,
 	bool unknown, real scale_a, real scale_b);
@@ -3825,7 +3823,6 @@ void function_faa60(vector3f *velocity, long projectile_index, s_collision_resul
 		{
 			s_type_1e6529 damage;
 
-			damage.material_index = NONE; /* retail stores it first; 0xd6660 then writes its default */
 			function_d6660(&damage, damage_definition_index);
 			damage.flags |= 8;
 			damage.unknown84 = *((byte *)definition + 0x128) & 0x3f;
@@ -3839,7 +3836,7 @@ void function_faa60(vector3f *velocity, long projectile_index, s_collision_resul
 			function_d7b80(&damage, collision->object_index, collision->node_index, collision->unknown44,
 				collision->unknown5a, &collision->normal);
 			if (function_188690(damage.material_index))
-				material_index = damage.material_index;
+				material_index = damage.material_index.m_index;
 			scale_b = damage.unknown78;
 		}
 	}
@@ -3930,7 +3927,6 @@ no_effects:
 	{
 		s_type_1e6529 damage;
 
-		damage.material_index = NONE; /* retail stores it first; 0xd6660 then writes its default */
 		function_d6660(&damage, damage_definition_index);
 		damage.flags |= 8;
 		damage.origin = collision->point;
@@ -3938,7 +3934,7 @@ no_effects:
 		damage.direction = *velocity;
 		function_30bf0(&damage.direction);
 		damage.unknown84 = *((byte *)definition + 0x128) & 0x3f;
-		damage.material_index = collision->unknown24;
+		damage.material_index.m_index = collision->unknown24;
 		damage.unknown80 = projectile_get_material_response(definition, c_type_47f957(collision->unknown24));
 		damage.location = collision->location;
 		damage.unknown7e = *(short *)((byte *)projectile + 0x1a8);

@@ -3,6 +3,7 @@
 #include "globals.h"
 #include "unknown_0259d0.h"
 #include "unknown_184250.h"
+#include "impacts.h"
 #include <xmmintrin.h>
 
 struct s_type_1e6529;
@@ -192,7 +193,7 @@ struct s_184065
 struct s_184066
 {
 	byte unknown00[8];
-	word material_index;
+	c_type_47f957 material_index;
 	byte unknown0a[0x14 - 0xa];
 };
 
@@ -238,7 +239,7 @@ struct s_184069
 
 struct s_globals_element;
 struct s_18444a;
-s_globals_element *function_188690(short index);
+s_globals_element *function_188690(c_type_47f957 index);
 byte *function_183fc0(long index);
 void __stdcall function_184440(long index, long bit_index, s_18444a const *input, long surface_index);
 real function_259a0(dword *seed);
