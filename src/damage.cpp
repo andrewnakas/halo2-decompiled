@@ -3228,10 +3228,26 @@ PRIVATE inline real damage_random_range(real lower, real upper)
 	return (upper - lower) * random + lower;
 }
 
+/* whether two teams are enemies in the campaign's allegiance table (the
+   campaign arm of function_1df560, 0x1df560) */
+PRIVATE inline bool damage_teams_hostile(short team_a, short team_b)
+{
+	bool result = true;
+
+	if (team_a >= 0 && team_a < 16 && team_b >= 0 && team_b < 16)
+		result = !function_0bfe60((dword const *)((byte *)g_4f55ec + 0xc4), team_a * 16 + team_b);
+	return result;
+}
+
 /* the damage a damage event does to an object before armor: a random
    amount between the definition's bounds, scaled by the event, the owner's
    AI and the game engine; sets *friendly when the team scale applies */
-// score 5 (was 5): only the order of the two cold exits differs.
+// MATCH (was 5): one `return damage` with both paths scaling the damage in place, and the allegiance test through the
+// inline two-team predicate above. Retail's two cold exits are copies of that one return: the back end gives every
+// branch into a short return block its own copy of it, in the order of the block's predecessor list (read in the
+// compiler). With the enemy flag tested in this body the not-enemy copy comes first (the 5 of the body before, and
+// of this single-return body with the flag written out); with the test inside the predicate the no-team and state
+// branches come first and the not-enemy stack reload is the last block, as in retail.
 // MiniMax B (11-20): no new form, no lower score (5): the two cold exits keep this build's order (the stack reload
 // before the xmm1 copy) where retail copies xmm1 first and lets the stack reload fall into the shared epilogue; the
 // no-team exit written as an early return (`team == NONE || state != 1`) measures 5 and lays the blocks out the same
@@ -3413,29 +3429,20 @@ real function_d9b60(s_type_1e6529 *data, byte const *definition, long object_ind
 	if (g_55e4d0[g_4e9ae8->engine_index])
 	{
 		real scale = function_15dec0(data->owner.player_index, function_d7ae0(object_index));
-		real scaled = scale * damage;
 
+		damage = scale * damage;
 		if (scale == 0.0f)
 			data->in_unknown_radius = false;
-		return scaled;
 	}
-
-	short team = data->owner.team;
-
-	if (team != NONE && g_4e6948->state == 1)
+	else
 	{
-		bool enemy = true;
+		short team = data->owner.team;
 
-		if (team >= 0 && team < 16)
-			enemy = !function_0bfe60((dword const *)((byte *)g_4f55ec + 0xc4), team * 16 + 1);
-		if (enemy)
+		if (team != NONE && g_4e6948->state == 1 && damage_teams_hostile(team, 1))
 		{
-			real result = function_1e9700(0) * damage;
-
+			damage = function_1e9700(0) * damage;
 			*friendly = true;
-			return result;
 		}
-		return damage;
 	}
 	return damage;
 }
