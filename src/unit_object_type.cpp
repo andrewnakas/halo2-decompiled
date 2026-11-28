@@ -2494,7 +2494,13 @@ void function_cfec0(long unit_index)
 /* the object that answers for the unit: the vehicle when the unit's seat
    has bit 0 or 3, or a rider of that vehicle with bit 27 of its
    definition's +0xbc and its object flag 26; else the unit */
-// score 1 (was 113): a return after each closing brace gives retail's per-level epilogues, lazy pushes and
+// MATCH (was 1): one `return unit_index` for every path, the equality test at the top, and the child found in the loop
+// assigned to `unit_index` before a `break`. Retail's per-level epilogues are copies of that one return: the back end
+// gives every branch into a short return block its own copy before the registers are assigned, so each copy pops what
+// its level has pushed, and the NONE exit keeps `mov eax, ebx` because the copy is made after the optimiser could have
+// put the constant there. With the child returned from inside the loop there are two return statements and no copies
+// (the 62 below).
+// Earlier at 1 (was 113): a return after each closing brace gives retail's per-level epilogues, lazy pushes and
 // exit order. Left: the last exit (unit_index == NONE) returns the constant (or eax, -1); retail moves ebx
 // (mov eax, ebx), so it did not fold the value there - the 11-15 round's `>` spelling of that test keeps the fold
 // away. Tried: a result variable returning at each level 47;
@@ -2665,7 +2671,7 @@ void function_cfec0(long unit_index)
 // @retail 0xcb6d0
 long function_cb6d0(long unit_index)
 {
-	if (unit_index > NONE)
+	if (unit_index != NONE)
 	{
 		s_unit *unit = UNIT_GET(unit_index);
 		long parent_index = unit->parent_index;
@@ -2691,14 +2697,12 @@ long function_cb6d0(long unit_index)
 					if (child && TEST_FIELD_BIT((*(dword *)(UNIT_DEFINITION_GET(child) + 0xbc) >> 27) & 1) &&
 						TEST_FIELD_BIT((child->object_flags >> 26) & 1))
 					{
-						return child_index;
+						unit_index = child_index;
+						break;
 					}
 				}
-				return unit_index;
 			}
-			return unit_index;
 		}
-		return unit_index;
 	}
 	return unit_index;
 }
