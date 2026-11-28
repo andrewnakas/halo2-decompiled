@@ -369,7 +369,25 @@ void function_19c6d0(s_record_pool *data, long key0)
 	}
 }
 
-// score 65 (was 108): GB r28 kept a two-field counted stack `s_flagged_keys` (`long count; long elements[50];`) with
+// MATCH (was 65), from two changes.
+// (1) The walk steps through a file-local copy of the iterator whose bitmap scan reads the pool's high water index
+// through a volatile pointer: the idiom of online_tasks.cpp, animation_cache.cpp, unknown_12c0d0.cpp,
+// unknown_12de70.cpp and unknown_1fb350.cpp. Retail compares with `[ebx+0x38]` in the scan's guard and loads it
+// again at the latch (`mov ecx, [ebx+0x38]; inc eax; cmp eax, ecx`) while it keeps the bitmap pointer in EDX and
+// uses neither EDI nor EBP inside that loop. Nine retail functions inline the iterator in this shape: 0x6b800,
+// 0x6b890, 0x123680, 0x12c530, 0x12d0a0, 0x12ddd0, 0x1fb6f0, 0x1fb760, which are the tree's eight volatile copies,
+// and this one. (Matched 0x16b840 has the latch reload from plain source, but with all seven registers busy.) This
+// change alone is 14: the four differences listed under 65 below, less the hoist.
+// (2) The flagged key is read into a named local ahead of the count: `long key = entry->key; long index =
+// flagged.count; flagged.count = index + 1; flagged.elements[index] = key;`. The key load is then emitted ahead of
+// the count store, and the three ECX/EDX differences go with it. They were one difference: as a named local the key
+// is coloured by the allocator (EAX) and no longer takes a scratch register, and scratch registers are handed out
+// in turn (eax, ecx, edx). With one fewer taken, the turn gives `lea edx` at qsort, ECX then EDX in loop 2 and
+// `lea eax` at sort_4byte, where the count's load into EAX then has to follow the push.
+// Measured on the volatile copy (reduced image): the store as it was 14; `flagged.elements[flagged.count++] = key`
+// with the key local 152; a `push(long)` method with that body 152, taking `const long &` 152; a `push(long)` method
+// with the three-statement body MATCH; the key local declared after `index` MATCH.
+// Earlier at 65 (was 108): GB r28 kept a two-field counted stack `s_flagged_keys` (`long count; long elements[50];`) with
 // `long index = flagged.count; flagged.count = index + 1; flagged.elements[index] = entry->key;` and the callers'
 // `long temporary;` for `sort_4byte` (108 -> 65, +0x91, 400/393 B, sub esp 0x198, ret 4, all peers including 0x19c190
 // and 0x19c6d0 MATCH). The struct places `flagged.count` at [esp+0x14] directly ahead of `flagged.elements` at
@@ -462,6 +480,40 @@ void function_19c6d0(s_record_pool *data, long key0)
 // iterator with direct return inside for 65; on s_flagged_keys::push(long) (51): 1u<< / div-mod-32 non-forced helpers
 // outlined 82 (368 B), early-NONE return helper 47 (398 B, folds add edi,[ebx+0x44] while still hoisting edi),
 // data_iterator_next_calling 170 (350 B, breaks 0x19c190), for-loop datum walk 242 (476 B, breaks 0x19c190).
+/* steps an iterator to the next datum in use. The bitmap scan reads the pool's high water index
+   again on every step, as retail's copy inlined into function_19c7e0 does (see the note above) */
+static __forceinline byte *level_datum_iterator_next(s_record_pool_iterator *iterator)
+{
+	s_record_pool *data = iterator->data;
+	long index = iterator->index + 1;
+	long next_index = NONE;
+	if (index >= 0)
+	{
+		for (; index < *(long volatile *)&data->high_water_index; index++)
+		{
+			if (data->bitmap[index >> 5] & (1 << (index & 0x1f)))
+			{
+				next_index = index;
+				break;
+			}
+		}
+	}
+	byte *datum;
+	if (next_index != NONE)
+	{
+		datum = data->data + data->size * next_index;
+		iterator->index = next_index;
+		iterator->datum_index = (*(short *)datum << 16) | next_index;
+	}
+	else
+	{
+		iterator->index = data->maximum_count;
+		iterator->datum_index = NONE;
+		datum = NULL;
+	}
+	return datum;
+}
+
 struct s_flagged_keys
 {
 	long count;
@@ -488,9 +540,10 @@ void function_19c7e0(s_record_pool *data)
 				keys[count++] = entry->key;
 				if (entry->flags & 1)
 				{
+					long key = entry->key;
 					long index = flagged.count;
 					flagged.count = index + 1;
-					flagged.elements[index] = entry->key;
+					flagged.elements[index] = key;
 				}
 			}
 		}
@@ -516,7 +569,7 @@ void function_19c7e0(s_record_pool *data)
 	iterator.data = data;
 	iterator.index = NONE;
 	iterator.datum_index = NONE;
-	while ((datum = (s_level_datum *)data_iterator_next_inlined(&iterator)) != NULL)
+	while ((datum = (s_level_datum *)level_datum_iterator_next(&iterator)) != NULL)
 	{
 		if (binary_search_4byte(datum->value, flagged.elements, flagged.count, function_19c7d0, 0) != NONE)
 			datum->flag = true;
