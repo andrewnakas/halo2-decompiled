@@ -2735,7 +2735,7 @@ PRIVATE __forceinline void component_child_frame_matrix(c_component_child_frames
 // (src/unknown_141590.cpp), and 0x141f60 stops taking an argument in ebx. That was the earlier "enabling this body loses
 // 10 matched functions that neither call it nor are called by it" (0x141f60, its callers 0x142360, 0x1424f0, 0xbfa40,
 // 0x16c4f0, 0x16c5f0 and functions above those; maintainer's full check on #566). With the buffer in the inline helper
-// nothing is lost in the full check and the body's score is its own (298, 985 of 1023 bytes). The body behaves like
+// nothing is lost in the full check and the body is measured on its own; it matches now (note above the function). The body behaves like
 // retail on 6/6 in-game snapshots (fecheck): retail keeps all three arguments on the stack (ret 0xc) and its callers
 // 0xbc8dc and 0xbd1a7 push them.
 /* views of s_component_node_object and s_component_node_render_model with the fields
@@ -2757,6 +2757,24 @@ struct s_component_node_render_model_1d3920
     s_component_node_default *nodes;
 };
 
+/* whether the node is the link's node or lies below it in the node tree */
+PRIVATE __forceinline bool component_node_below_1d3920(s_component_node_body_model const *physics, long node,
+    s_component_node_body_link const *link)
+{
+    for (; node != NONE; node = physics->nodes[node].parent)
+    {
+        if (node == link->node)
+            return true;
+    }
+    return false;
+}
+
+// MATCH (was 298). Retail looks the object up a second time for the orientation test (`cmp word [ecx+0x112]`
+// reloads the object pointer after the mask stores, the block itself is read through the first lookup), so the
+// object index is one local used by both lookups. The mask is zeroed with `= {}` after the other zero locals: an
+// explicit `{ 0, ... }` list made the constant 0 a register candidate that took ebx from the component. The node
+// count is tested before the entry loop (retail tests it twice), the ancestor test returns from its loop
+// (component_node_below_1d3920) and the ancestor marking reads the parent through the node's record.
 /* Moves the component's driven nodes onto their rigid bodies (raised by `offset`), marks
    them in `updated` and rebuilds the rest of the hierarchy from the moved nodes. */
 // @retail 0x1d3920
@@ -2769,17 +2787,18 @@ void __stdcall function_1d3920(byte *component_bytes, dword *updated, real offse
     s_havok_component *component = (s_havok_component *)*component_reference;
     if (TEST_FIELD_BIT(component->flag9) || component->rigid_bodies.size <= 0)
         return;
-    s_component_node_object_1d3920 *object = (s_component_node_object_1d3920 *)havok_object_get(component->object_index);
+    long object_index = component->object_index;
+    s_component_node_object_1d3920 *object = (s_component_node_object_1d3920 *)havok_object_get(object_index);
     s_component_transform_definition *definition = (s_component_transform_definition *)g_4e3b44[object->definition_index & 0xffff].bytes;
     s_component_transform_model *model = (s_component_transform_model *)g_4e3b44[definition->model_index & 0xffff].bytes;
     s_component_node_body_model *physics = (s_component_node_body_model *)g_4e3b44[
         ((s_component_collision_model_link *)model)->physics_model_index & 0xffff].bytes;
     s_component_node_render_model_1d3920 *render_model = (s_component_node_render_model_1d3920 *)g_4e3b44[model->render_model_index & 0xffff].bytes;
-    dword moved[8] = { 0, 0, 0, 0, 0, 0, 0, 0 };
     long unknown = 0;
     rigid_transform_scaled *orientations = NULL;
     bool changed = false;
-    if (object->orientations_offset != NONE)
+    dword moved[8] = {};
+    if (((s_component_node_object_1d3920 *)object_get(object_index))->orientations_offset != NONE)
     {
         unknown = (dword)object->unknown110 >> 5;
         orientations = (rigid_transform_scaled *)((byte *)object + object->orientations_offset);
@@ -2787,36 +2806,40 @@ void __stdcall function_1d3920(byte *component_bytes, dword *updated, real offse
     for (long i = 0; i < component->rigid_bodies.size; i++)
     {
         s_component_node_body_link *first = &physics->bodies[component->rigid_bodies.data[i].nodes[0]];
-        for (long j = 0; j < component->rigid_bodies.data[i].node_count; j++)
+        if (component->rigid_bodies.data[i].node_count > 0)
         {
-            s_component_node_body_link *link = &physics->bodies[component->rigid_bodies.data[i].nodes[j]];
-            if (link->node == NONE || havok_component_rigid_body_get(i, component)->m_motion->kind_code() == 6)
-                continue;
-            long node = link->node;
-            if ((*updated_reference)[node >> 5] & (1 << (node & 31)))
-                continue;
-            /* a node below the body's first node follows that node */
-            long ancestor = node;
-            while (ancestor != NONE && ancestor != first->node)
-                ancestor = physics->nodes[ancestor].parent;
-            if (ancestor != NONE && link->node != first->node)
-                continue;
-            long parent = physics->nodes[node].parent;
-            transform4x3f *matrix = &component_node_matrices(component->object_index)[node];
-            component->rigid_body_matrix_get(i, matrix);
-            matrix->position.z += *offset_reference;
-            if (link->node != first->node)
+            for (long j = 0; j < component->rigid_bodies.data[i].node_count; j++)
             {
-                transform4x3f frame_matrix;
-                c_component_child_frames *shape = *(c_component_child_frames **)((byte *)component->rigid_bodies.data[i].rigid_body + 0xc);
-                component_child_frame_matrix(shape, j, &frame_matrix);
-                function_142a60(matrix, &frame_matrix, matrix);
+                s_component_node_body_link *link = &physics->bodies[component->rigid_bodies.data[i].nodes[j]];
+                if (link->node == NONE || havok_component_rigid_body_get(i, component)->m_motion->kind_code() == 6)
+                    continue;
+                long node = link->node;
+                if ((*updated_reference)[node >> 5] & (1 << (node & 31)))
+                    continue;
+                /* a node below the body's first node follows that node */
+                if (component_node_below_1d3920(physics, link->node, first) && link->node != first->node)
+                    continue;
+                long parent = physics->nodes[node].parent;
+                transform4x3f *matrix = &component_node_matrices(component->object_index)[node];
+                component->rigid_body_matrix_get(i, matrix);
+                matrix->position.z += *offset_reference;
+                if (link->node != first->node)
+                {
+                    transform4x3f frame_matrix;
+                    c_component_child_frames *shape = *(c_component_child_frames **)((byte *)component->rigid_bodies.data[i].rigid_body + 0xc);
+                    component_child_frame_matrix(shape, j, &frame_matrix);
+                    function_142a60(matrix, &frame_matrix, matrix);
+                }
+                (*updated_reference)[link->node >> 5] |= 1 << (link->node & 31);
+                changed = true;
+                moved[link->node >> 5] |= 1 << (link->node & 31);
+                while (parent != NONE)
+                {
+                    s_component_node_parent *above = &physics->nodes[parent];
+                    moved[parent >> 5] |= 1 << (parent & 31);
+                    parent = above->parent;
+                }
             }
-            (*updated_reference)[link->node >> 5] |= 1 << (link->node & 31);
-            changed = true;
-            moved[link->node >> 5] |= 1 << (link->node & 31);
-            for (; parent != NONE; parent = physics->nodes[parent].parent)
-                moved[parent >> 5] |= 1 << (parent & 31);
         }
     }
     if (changed && render_model->node_count > 0)
