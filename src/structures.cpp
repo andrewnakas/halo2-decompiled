@@ -157,12 +157,6 @@ bool structure_get_lightmap_triangle(s_structure_collision_result const *collisi
 bool __stdcall function_14a8e0(s_structure_collision_result const *collision,
     long model_index, s_structure_lightmap_triangle *triangle);
 
-/* the collision a surface query starts from, passed by value */
-struct s_surface_query_source
-{
-    void *collision;
-};
-
 /* whether the current structure bsp is loaded and its collision usable */
 static __forceinline bool structure_bsp_collision_available()
 {
@@ -174,7 +168,16 @@ static __forceinline bool structure_bsp_collision_available()
 // MiniMax I (11-06): 45, not kept: the model query's result stored in `result` with a new `goto done` to the
 // shared exit in place of the early return (retail's 286 bytes, same code otherwise); a goto main's body does
 // not have is kept only with a byte match.
-// score 53 (was 53): frame 0x60/prefix agree; exclusion BL and source-slot rewrite/reload remain absent; the byte result
+// MATCH (was 53): the collision is a plain pointer parameter, read and reassigned in place, and the object part is
+// written as in 0x14af40: `excluded` from the && expression, `found = !excluded && 0xbf9a0(...)`, the requery under
+// `if (!(excluded | found))`, one bool result. The `|` is computed in the join, so the flag test after 0xbf9a0 is
+// not threaded (`test bl, bl`, as retail). That form alone was 81 (76 with the member read in place) while the
+// pointer came wrapped in a one-member struct: the allocator ranked the pointer (23) above the flag (18), the
+// pointer took EBX, the only callee-saved register with a byte half, and the flag went to memory. As a plain
+// parameter the pointer ranks below the flag: the flag is coloured EBX, and the pointer is split around
+// &triangle->c (EDI), living in its argument slot in between (stored after the requery, reloaded after 0xbf9a0),
+// which is retail's code. The struct is gone; caller 0xd2bb0 passes its pointer and still matches.
+// Earlier at 53 (was 53): frame 0x60/prefix agree; exclusion BL and source-slot rewrite/reload remain absent; the byte result
 // is still normalized with setne at both exits.
 // Earlier at 53 (was 61): the 0xbf9a0 probe is inverted, so the 0x14a8e0 return is laid out after the requery as
 // in retail. MiniMax E (10-31): with the type-6 test also setting a named exclusion flag 51 (a test-set flag,
@@ -438,40 +441,39 @@ static __forceinline bool structure_bsp_collision_available()
 // requery's assignments, in the excluded early-return arm, and in a new empty found-miss else arm, 53 each (286 B, the
 // body's code).
 // @retail 0x14b120
-bool function_14b120(s_surface_query_source source, void *surface)
+bool function_14b120(s_structure_collision_result const *collision, void *surface)
 {
-    byte result = false;
+    bool result = false;
     byte local_collision[0x5c];
     *(short *)(local_collision + 0x24) = NONE;
     if (!structure_bsp_collision_available())
         return false;
-    s_structure_collision_result const *collision = (s_structure_collision_result const *)source.collision;
     s_structure_lightmap_triangle *triangle = (s_structure_lightmap_triangle *)surface;
     triangle->cluster_index = NONE;
     triangle->instance_index = NONE;
     *(long *)((byte *)triangle + 8) = NONE;
-    bool found = collision->type == 1 || collision->type == 3;
+    bool hit = collision->type == 1 || collision->type == 3;
     long object_index = *(long const *)((byte const *)collision + 0x40);
     if (object_index != NONE)
     {
         byte *object = *(byte **)(g_4e0300->data + (object_index & 0xffff) * 12 + 8);
-        if (object[0xaa] == 6 && function_10a0b0(object_index) != 2)
-            return result;
-        if (!function_bf9a0(object_index, (long *)((byte *)triangle + 0xc),
-            (long *)((byte *)triangle + 0x10)))
+        bool excluded = object[0xaa] == 6 && function_10a0b0(object_index) != 2;
+        hit = false;
+        bool found = !excluded && function_bf9a0(object_index, (long *)((byte *)triangle + 0xc),
+            (long *)((byte *)triangle + 0x10));
+        if (!found)
         {
-            found = function_1697c0(0x4800005, &collision->point, g_4687bc, NONE, NONE,
-                (s_collision_result_1697c0 *)local_collision);
-            source.collision = local_collision;
-            collision = (s_structure_collision_result const *)source.collision;
+            if (!(excluded | found))
+            {
+                hit = function_1697c0(0x4800005, &collision->point, g_4687bc, NONE, NONE,
+                    (s_collision_result_1697c0 *)local_collision);
+                collision = (s_structure_collision_result const *)local_collision;
+            }
         }
         else
-        {
-            return function_14a8e0((s_structure_collision_result const *)source.collision,
-                *(long *)((byte *)triangle + 0xc), triangle);
-        }
+            result = function_14a8e0(collision, *(long *)((byte *)triangle + 0xc), triangle);
     }
-    if (found)
+    if (hit)
         result = structure_get_lightmap_triangle(collision, triangle);
     return result;
 }
