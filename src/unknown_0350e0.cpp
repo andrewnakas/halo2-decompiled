@@ -6783,7 +6783,12 @@ PRIVATE inline vector3f shadow_cross_r18(vector3f const &a, vector3f const &b)
 
 extern s_record_pool *g_509434;
 extern long g_4ba050;
-long __stdcall function_3ddd0(long object_index);
+/* 0x3ddd0's result: the cache record's index as a one-field aggregate (returned in EAX, as a long is) */
+struct s_3ddd0_result
+{
+    long index;
+};
+s_3ddd0_result __stdcall function_3ddd0(long object_index);
 
 // The level byte cached for the current view: the read counterpart of function_4c640.
 PRIVATE inline signed char cached_level_4c450(long object_index)
@@ -6792,7 +6797,7 @@ PRIVATE inline signed char cached_level_4c450(long object_index)
     if (g_4ba050 >= 0 && g_4ba050 < 4)
     {
         byte *slot = NULL;
-        long cache = function_3ddd0(object_index);
+        long cache = function_3ddd0(object_index).index;
         if (cache != NONE)
             slot = g_509434->data + (cache & 0xffff) * 0x100 + 0xbc;
         result = (signed char)slot[g_4ba050];

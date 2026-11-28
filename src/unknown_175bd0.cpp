@@ -166,7 +166,12 @@ __declspec(noinline) bool function_11c080(s_location const *location);
 bool function_11c120(s_location const *location, point3f const *point, short *zone_index);
 bool function_3eb20(long cluster_index);
 bool __stdcall function_3ebd0(vector3f const *offset, transform4x3f const *matrices, transform4x3f *out, long count);
-long __stdcall function_3ddd0(long object_index);
+/* 0x3ddd0's result: the cache record's index as a one-field aggregate (returned in EAX, as a long is) */
+struct s_3ddd0_result
+{
+	long index;
+};
+s_3ddd0_result __stdcall function_3ddd0(long object_index);
 bool __stdcall function_bab40(long object_index, long name, real *value);
 bool function_bad50(long object_index, long index, point3f *out);
 long function_baf80(long object_index);
@@ -2901,7 +2906,7 @@ bool __stdcall function_1794e0(long effect_index)
 
 			if (function_badc0(object_index, NONE))
 			{
-				long index = function_3ddd0(function_baf80(object_index));
+				long index = function_3ddd0(function_baf80(object_index)).index;
 
 				if (index != NONE)
 				{
@@ -4913,7 +4918,7 @@ void function_17b5d0(s_effect_datum *effect, long object_index, s_effect_paramet
 	}
 	else if (function_badc0(object_index, NONE))
 	{
-		long index = function_3ddd0(function_baf80(object_index));
+		long index = function_3ddd0(function_baf80(object_index)).index;
 
 		if (index != NONE)
 		{

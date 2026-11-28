@@ -115,7 +115,12 @@ real __stdcall function_be8b0(long object_index, long name);
 struct s_object_list;
 extern s_object_list *g_4de2f4;
 long function_baf80(long object_index);
-long __stdcall function_3ddd0(long object_index);
+/* 0x3ddd0's result: the cache record's index as a one-field aggregate (returned in EAX, as a long is) */
+struct s_3ddd0_result
+{
+    long index;
+};
+s_3ddd0_result __stdcall function_3ddd0(long object_index);
 
 // @retail 0x3d430
 signed char *function_3d430(long object_index)
@@ -123,7 +128,7 @@ signed char *function_3d430(long object_index)
     signed char *result = NULL;
     if (g_4ba050 >= 0 && g_4ba050 < 4)
     {
-        long cache = function_3ddd0(object_index);
+        long cache = function_3ddd0(object_index).index;
         if (cache != NONE)
         {
             // Reload the shared channel index after cache setup.
@@ -142,7 +147,7 @@ void function_4c640(long object_index, signed char value)
     if (g_4ba050 >= 0 && g_4ba050 < 4)
     {
         byte *slot = NULL;
-        long cache = function_3ddd0(object_index);
+        long cache = function_3ddd0(object_index).index;
         if (cache != NONE)
             slot = g_509434->data + (cache & 0xffff) * 0x100 + 0xbc;
         slot[g_4ba050] = (byte)value;
@@ -161,7 +166,7 @@ byte *__stdcall function_3dc90(long object_index)
         result = function_3dc90(function_baf80(object_index));
     else
     {
-        long cache = function_3ddd0(object_index);
+        long cache = function_3ddd0(object_index).index;
         if (cache != NONE)
         {
             byte *record = g_509434->data + (cache & 0xffff) * 0x100;

@@ -1162,7 +1162,12 @@ void __stdcall function_118430(long index)
 #include "flexible_surface_calls.h"
 #include "shader_cache.h"
 extern s_record_pool *g_509434;
-long __stdcall function_3ddd0(long);
+/* 0x3ddd0's result: the cache record's index as a one-field aggregate (returned in EAX, as a long is) */
+struct s_3ddd0_result
+{
+	long index;
+};
+s_3ddd0_result __stdcall function_3ddd0(long object_index);
 void function_1cf50();
 byte *g_485a80;
 // Render-state storage read by the two external state helpers.
@@ -1190,7 +1195,7 @@ void __stdcall function_116b00(long tag_index, long unused, long group, long var
 	s_surface_definition *definition = surface_definition(record);
 	long object_index = record->object_index;
 	void *lighting = NULL;
-	long lighting_index = function_3ddd0(object_index);
+	long lighting_index = function_3ddd0(object_index).index;
 	if (lighting_index != NONE)
 		lighting = g_509434->data + (lighting_index & 0xffff)*0x100 + 0x44;
 	function_1bd50(lighting);

@@ -71,7 +71,12 @@ long function_155760(long player_index);
 long __stdcall first_person_weapons_get_models(long user_index, long unit_index, long maximum, s_first_person_model *models);
 extern long g_4b72c0;
 
-long __stdcall function_3ddd0(long object_index);
+/* 0x3ddd0's result: the cache record's index as a one-field aggregate (returned in EAX, as a long is) */
+struct s_3ddd0_result
+{
+    long index;
+};
+s_3ddd0_result __stdcall function_3ddd0(long object_index);
 
 bool function_14ddc0(long local_player_index);
 long function_16c2b0(void);
@@ -102,14 +107,14 @@ s_lighting_record *function_3db00(long object_index, real priority)
     if (cluster != NONE)
         return (s_lighting_record *)(*(byte **)((byte *)g_4e0348 + 0x230) + cluster * 0x5c + 8);
     long parent_index = function_baf80(object_index);
-    long cache_index = function_3ddd0(parent_index);
+    long cache_index = function_3ddd0(parent_index).index;
     if (cache_index != NONE)
     {
         s_3dfe0_cache *cache = (s_3dfe0_cache *)(g_509434->data + (cache_index & 0xffff) * 0x100);
         if (parent_index == object_index) function_3dfe0(cache_index, object_index, priority);
         else
         {
-            long child_cache_index = function_3ddd0(object_index);
+            long child_cache_index = function_3ddd0(object_index).index;
             if (child_cache_index != NONE)
             {
                 s_3dfe0_cache *child = (s_3dfe0_cache *)(g_509434->data + (child_cache_index & 0xffff) * 0x100);
@@ -130,7 +135,22 @@ s_lighting_record *function_3db00(long object_index, real priority)
     function_d4080(*(short *)definition, &query, special, &g_55ee60);
     return &g_55ee60;
 }
-// score 77 (was 77): from +0x54: the found path enters the merge test (retail jumps past it to the reload), the merge
+// MATCH (518 B): M3 lane 3's held form of r270 (its note below has the measurements), applied with its callers. The
+// function returns a one-field aggregate holding the index (in EAX, as a long is) and each caller reads `.index`; the
+// found test only sets result.index; the allocation and the walk run under `if (result.index == NONE)`; the walk
+// closes with `cache_index = result.index;` and the flag is set by `if (cache_index != NONE) ... else return result;`.
+// Measured again outside the lanes on r1040 (full build, stand-in SDK headers): this function 77 -> 0 and no other
+// function moves (the callers 0x1794e0, 0x17b5d0, 0x15e360, 0x335e0, 0x3d430, 0x4c640, 0x3dc90 and 0x3db00 still
+// match, open 0x116b00 and 0x4b5d0 keep their scores).
+// Scalar forms measured before that, none kept (reduced image; they show why the aggregate is needed): the found path
+// routed by a flag (`cached || result != NONE`) 83, all of it retail's but the walk's exit, which is folded and
+// inline; that with the exit as a goto to the only return 85 (the epilogues merge on ESI, as r185 found); a single
+// return of a second index variable copied from the result at the merge (`cache_index = result; done: return
+// cache_index;`, the exit as `goto done`) gives retail's whole layout (the trailing private epilogue, the second test,
+// both reloads in the tail) but returns that variable from a spill of its own (130, 522 B); the search writing that
+// variable 99, both variables 86, the exit through a fresh local 83 (folded again). A scalar exit is either folded to
+// the tested constant or needs a second home; the aggregate copy is neither.
+// Earlier at 77: from +0x54: the found path enters the merge test (retail jumps past it to the reload), the merge
 // block tests EAX (retail ESI), and the walk's NONE return folds to a constant inline (retail: trailing `mov eax, esi`
 // epilogue); 510 bytes against 518. Notes below, merged into one; m3 lane 11 r104's findings at the end.
 // MiniMax D (11-16): no lower score (77): the arrangement that reproduces retail's layout (the merge block's flag set
@@ -544,9 +564,9 @@ s_lighting_record *function_3db00(long object_index, real priority)
 // retail's `je`, but both epilogues merge on ESI and the merge block reloads the result into EAX); that merge with the
 // walk's return moved to close the else arm 86 (506 B). On the 9 form only two points differ: ours reloads the result
 // before the merge test because the found edge enters it, and the walk's NONE return folds to `or eax, -1`.
-// M3 lane 3 r270: HELD (needs the owner's OK): byte MATCH in the fast and the plain check (518 B, every caller and callee
+// M3 lane 3 r270: HELD then (applied since, see MATCH above): byte MATCH in the fast and the plain check (518 B, every caller and callee
 // unchanged: 0x3d430, 0x4c640, 0x3dc90, 0x335e0, 0x3db00, 0x15e360, 0x17b5d0 matched as before, 0x4b5d0 93, 0x1794e0 63 and
-// 0x116b00 322 as in the baseline), not applied: the form changes this function's return type, so each caller's
+// 0x116b00 322 as in the baseline), not applied at the time: the form changes this function's return type, so each caller's
 // call line needs `.index`, and one of them sits inside contributor function 0x1794e0 (src/unknown_175bd0.cpp); two
 // more callers are in files other lanes hold this round (src/unknown_03f2b0.cpp, src/unknown_157450.cpp). The full
 // diff is build/r270/held-0x3ddd0.patch (seven files). The form: the function returns a one-field aggregate holding the
@@ -574,20 +594,19 @@ s_lighting_record *function_3db00(long object_index, real priority)
 // plain inline it stays a call. Diagnostic (removed): the result's address stored in a scratch global with a scalar
 // return still folds the exit.
 // @retail 0x3ddd0
-long __stdcall function_3ddd0(long object_index)
+s_3ddd0_result __stdcall function_3ddd0(long object_index)
 {
     byte *object = ((s_3dd10_object_header *)g_4e0300->data)[object_index & 0xffff].object;
     long cache_index = *(long *)(object + 0xcc);
-    long result;
+    s_3ddd0_result result;
     bool initialize = false;
+    result.index = NONE;
     if (cache_index != NONE && *(long *)(g_509434->data + (cache_index & 0xffff) * 0x100 + 4) == object_index)
-    {
-        result = cache_index;
-    }
-    else
+        result.index = cache_index;
+    if (result.index == NONE)
     {
         cache_index = record_pool_allocate(g_509434);
-        result = cache_index;
+        result.index = cache_index;
         if (cache_index == NONE)
         {
             real oldest = -3.402823466e+38f;
@@ -600,17 +619,20 @@ long __stdcall function_3ddd0(long object_index)
                 if (age > oldest)
                 {
                     oldest = age;
-                    result = index;
+                    result.index = index;
                 }
                 index = data_datum_index(g_509434, function_16bc00(g_509434, index == NONE ? 0 : (index & 0xffff) + 1));
             }
-            if (result == NONE) return result;
+            cache_index = result.index;
         }
-        initialize = true;
+        if (cache_index != NONE)
+            initialize = true;
+        else
+            return result;
     }
-    if (result != NONE)
+    if (result.index != NONE)
     {
-        byte *record = g_509434->data + (result & 0xffff) * 0x100;
+        byte *record = g_509434->data + (result.index & 0xffff) * 0x100;
         if (initialize)
         {
             *(long *)(record + 4) = object_index;
@@ -627,7 +649,7 @@ long __stdcall function_3ddd0(long object_index)
             function_ba690(object_index, &state_count, &states, NULL, NULL);
             for (long i = 0; i < 4; ++i)
                 memcpy(record + 0xc0 + i * 16, states, state_count);
-            *(long *)(object + 0xcc) = result;
+            *(long *)(object + 0xcc) = result.index;
             function_3dd10(object_index, true);
         }
     }

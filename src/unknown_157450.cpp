@@ -29,7 +29,12 @@ void function_ce520(long unit_index, long weapon_index, bool flag);
 void function_b75a0(long object_index, point3f const *point, vector3f const *forward,
 	vector3f const *up, s_location const *location, bool flag);
 void function_b73b0(long object_index);
-long __stdcall function_3ddd0(long object_index);
+/* 0x3ddd0's result: the cache record's index as a one-field aggregate (returned in EAX, as a long is) */
+struct s_3ddd0_result
+{
+	long index;
+};
+s_3ddd0_result __stdcall function_3ddd0(long object_index);
 
 struct s_engine_item_flags
 {
@@ -49,7 +54,7 @@ void function_15e360(point3f const *point, long object_index)
 			function_ce520(*(long *)(object + 0x154), object_index, true);
 		function_b75a0(object_index, point, g_4687a8, g_4687b0, NULL, false);
 		function_b73b0(object_index);
-		long cache_index = function_3ddd0(object_index);
+		long cache_index = function_3ddd0(object_index).index;
 		if (cache_index != NONE)
 			g_509434->data[(cache_index & 0xffff) * 0x100 + 2] = 0;
 		*(long *)(object + 0x150) = NONE;

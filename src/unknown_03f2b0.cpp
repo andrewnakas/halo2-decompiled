@@ -1220,7 +1220,12 @@ __declspec(noinline) void function_4c640(long object_index, signed char value);
 
 extern s_record_pool *g_509434;
 extern long g_4ba050;
-long __stdcall function_3ddd0(long object_index);
+/* 0x3ddd0's result: the cache record's index as a one-field aggregate (returned in EAX, as a long is) */
+struct s_3ddd0_result
+{
+    long index;
+};
+s_3ddd0_result __stdcall function_3ddd0(long object_index);
 extern long g_4ba01c;
 extern bool g_4ba019;
 extern byte *g_485a80;
@@ -1716,14 +1721,14 @@ void function_4b5d0(bool force, long override, long object_index, real distance,
         if (g_4ba050 >= 0 && g_4ba050 < 4)
         {
             byte *levels = NULL;
-            long cache_index = function_3ddd0(drawn_object);
+            long cache_index = function_3ddd0(drawn_object).index;
             if (cache_index != NONE)
                 levels = g_509434->data + (cache_index & 0xffff) * 0x100;
             previous = (signed char)levels[g_4ba050 + 0xbc];
         }
         function_3d430(*source_object);
         s_batch_cache_4b5d0 *cache = NULL;
-        long cache_index = function_3ddd0(*source_object);
+        long cache_index = function_3ddd0(*source_object).index;
         if (cache_index != NONE)
             cache = (s_batch_cache_4b5d0 *)(g_509434->data + (cache_index & 0xffff) * 0x100 + 0x44);
         *cache_slot = cache;
